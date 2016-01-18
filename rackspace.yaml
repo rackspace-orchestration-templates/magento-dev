@@ -12,6 +12,8 @@ hidden_outputs:
   - magento_login_user
   - magento_login_password
   - magento_admin_url
+  - mysql_user
+  - mysql_password
   - ssh_private_key
 
 abstract: |
