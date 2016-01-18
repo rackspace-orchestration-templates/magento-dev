@@ -9,11 +9,10 @@ reach-info:
   tattoo: https://0b5294b243620310a700-e388a7f3aba385a925111b1fc6f680d4.ssl.cf2.rackcdn.com/magento-tattoo.png
   icon-20x20: https://0b5294b243620310a700-e388a7f3aba385a925111b1fc6f680d4.ssl.cf2.rackcdn.com/magento-icon-20x20.png
 hidden_outputs:
-  - ssh_pub_key
-  - ssh_priv_key
-  - magento_admin_password
-  - magento_db_password
-  - magento_db_root_pw
+  - magento_login_user
+  - magento_login_password
+  - magento_admin_url
+  - ssh_private_key
 
 abstract: |
   Magento is an open-source eCommerce platform written in PHP.
