@@ -19,6 +19,11 @@ parameter_groups:
   - magento_fname
   - magento_lname
   - magento_eula
+- label: rax-dev-params
+  parameters:
+  - server_image
+  - ansible_branch
+  - ansible_repo
 
 parameters:
   #Magento Customization
@@ -78,12 +83,18 @@ parameters:
     - allowed_values:
       - 4 GB General Purpose v1
       - 8 GB General Purpose v1
-#  server_image:
-#    type: string
-#    default: f4bbbce2-50b0-4b07-bf09-96c175a45f4b
-#    constraints:
-#    - allowed_values:
-#      - f4bbbce2-50b0-4b07-bf09-96c175a45f4b
+  server_image:
+    type: string
+    default: f4bbbce2-50b0-4b07-bf09-96c175a45f4b
+    constraints:
+    - allowed_values:
+      - f4bbbce2-50b0-4b07-bf09-96c175a45f4b
+  ansible_branch:
+    type: string
+    default: stable
+  ansible_repo:
+    type: string
+    default: https://github.com/rackspace-orchestration-templates/ansible-roles.git
 
 resources:
   #Passwords
@@ -101,29 +112,6 @@ resources:
     properties:
       name: { get_param: "OS::stack_id" }
       save_private_key: true
-  #Cloud Database
-#  magento_database:
-#    type: OS::Trove::Instance
-#    properties:
-#      name:
-#        str_replace:
-#          template: stack_Database
-#          params:
-#            stack: { get_param: "OS::stack_name" }
-#      flavor: { get_param: database_flavor }
-#      size: { get_param: database_disk }
-#      datastore_type: mysql
-#      #datastore_version: "5.6"
-#      datastore_version: "5.1"
-#      databases:
-#      - name: magento
-#      users:
-#      - name: magento
-#        password: { get_attr: [database_pass, value] }
-#        databases: [magento]
-#      - name: holland
-#        password: { get_attr: [holland_pass, value] }
-#        databases: [magento]
   #Software Configurations
   upload_role_config:
     type: OS::Heat::SoftwareConfig
@@ -131,10 +119,15 @@ resources:
       group: script
       outputs:
       - name: results
-      config: |
-        #!/bin/bash
-        set -e
-        git clone -b 'stable' --single-branch --progress https://github.com/rackspace-orchestration-templates/ansible-roles.git /etc/ansible/roles > $heat_outputs_path.results 2>&1
+      config:
+        str_replace:
+          template: |
+            #!/bin/bash
+            set -e
+            git clone -b 'tag' --single-branch --progress repository /etc/ansible/roles > $heat_outputs_path.results 2>&1
+          params:
+            tag: { get_param: ansible_branch}
+            repository: { get_param: ansible_repo }
   magento_config:
     type: OS::Heat::SoftwareConfig
     properties:
@@ -183,7 +176,7 @@ resources:
         magento_db_user: "magento"
         magento_db_password: { get_attr: [database_pass, value] }
         magento_db_name: "magento"
-        mysql_host_ip: "localhost" 
+        mysql_host_ip: "localhost"
         magento_sftp_user: "magento"
         magento_sftp_password: { get_attr: [magento_pass, value] }
         magento_version: 1.9.1.0
@@ -202,8 +195,7 @@ resources:
     type: OS::Nova::Server
     properties:
       name: { get_param: "OS::stack_name" }
-#      image: { get_param: server_image }
-      image: f4bbbce2-50b0-4b07-bf09-96c175a45f4b
+      image: { get_param: server_image }
       flavor: { get_param: server_flavor }
       key_name: { get_resource: ssh_key }
       software_config_transport: POLL_TEMP_URL
@@ -247,7 +239,8 @@ resources:
     type: Rackspace::Cloud::BackupConfig
     depends_on: magento_server
     properties:
-      host_ip_address: { get_attr: [magento_server, accessIPv4] }
+      #host_ip_address: { get_attr: [magento_server, accessIPv4] }
+      server: { get_resource: magento_server }
       BackupConfigurationName:
         str_replace:
           template: stack Weekly Backup
